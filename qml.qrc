@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Chip.qml</file>
+        <file>Dialogue.qml</file>
+        <file>Video.qml</file>
+        <file>AImage.qml</file>
+        <file>ResolutionBox.qml</file>
+        <file>AButton.qml</file>
+        <file>ASlider.qml</file>
+        <file>Audio.qml</file>
+        <file>ComponentLabel.qml</file>
+	<file>Backbutton.qml</file>
+	<file>ACheckBox.qml</file>
+	<file>icons/swap_horiz-24px.svg</file>
+	<file>icons/navigate_before-24px.svg</file>
+	<file>icons/navigate_before-white-24dp.svg</file>
+	<file>icons/meditation.jpg</file>
+	<file>icons/linked_camera-black-48dp.svg</file>
+	<file>icons/linked_camera-black-24dp.svg</file>
+	<file>icons/perm_media-black-48dp.svg</file>
+	<file>icons/graphic_eq-black-48dp.svg</file>
+	<file>icons/checkmark_16px.svg</file>
+	<file>icons/checkmark_30px.svg</file>
+    </qresource>
+</RCC>
