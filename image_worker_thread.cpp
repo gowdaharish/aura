@@ -50,7 +50,7 @@ cv::Mat QImageToCvMat( const QImage &inImage, bool inCloneImageData = true )
     {
         if ( !inCloneImageData )
         {
-            qWarning() << "ASM::QImageToCvMat() - Conversion requires cloning so we don't modify the original QImage data";
+            qWarning() << "conversion requires cloning so we don't modify the original QImage data";
         }
 
         cv::Mat  mat( inImage.height(), inImage.width(),
@@ -71,7 +71,7 @@ cv::Mat QImageToCvMat( const QImage &inImage, bool inCloneImageData = true )
     {
         if ( !inCloneImageData )
         {
-            qWarning() << "ASM::QImageToCvMat() - Conversion requires cloning so we don't modify the original QImage data";
+            qWarning() << "conversion requires cloning so we don't modify the original QImage data";
         }
 
         QImage   swapped = inImage.rgbSwapped();
@@ -96,22 +96,16 @@ cv::Mat QImageToCvMat( const QImage &inImage, bool inCloneImageData = true )
     }
 
     default:
-        qWarning() << "ASM::QImageToCvMat() - QImage format not handled in switch:" << inImage.format();
+        qWarning() << "QImage format not handled in switch:" << inImage.format();
         break;
     }
 
     return cv::Mat();
 }
-}
+} // namespace
 
-ImageWorkerThread::ImageWorkerThread(QObject * /*parent*/)
+ImageWorkerThread::ImageWorkerThread(QObject* parent) : QObject{parent}
 {
-}
-
-void ImageWorkerThread::run()
-{
-    while (true)
-    {}
 }
 
 void ImageWorkerThread::setOriginalImage(const QImage& image)
@@ -129,8 +123,8 @@ void ImageWorkerThread::setImage(const QImage& image)
 
     _image = image;
 
-    _mat = QImageToCvMat(_image);
-    _matCorrected = Mat(_mat.rows, _mat.cols, _mat.type());
+    auto mat = QImageToCvMat(_image);
+    _matCorrected = Mat(mat.rows, mat.cols, mat.type());
     emit resultReady(_image);
 }
 
@@ -193,4 +187,10 @@ void ImageWorkerThread::gammaCorrection(const Mat& img, const double gamma)
 
     _matCorrected = img.clone();
     LUT(img, lookUpTable, _matCorrected);
+}
+
+void ImageWorkerThread::stop()
+{
+    qDebug() << "stop grabbing" << endl;
+    _stop = true;
 }

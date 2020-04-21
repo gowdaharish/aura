@@ -17,6 +17,7 @@ Item {
     function clearImageSource() {
         liveImageItem.clearImage()
         root.imageLoaded = false
+        liveImageItem.terminate()
     }
 
     Connections {

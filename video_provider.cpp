@@ -7,14 +7,25 @@
 #include <QCoreApplication>
 #include <QCameraInfo>
 
-VideoProvider::VideoProvider(QCoreApplication* app, QObject* parent) : QObject{parent}, QQuickImageProvider(QQuickImageProvider::Pixmap), _app{app}
+VideoProvider::VideoProvider(QObject* parent) : QObject{parent}, QQuickImageProvider(QQuickImageProvider::Pixmap)
 {
 }
 
-// this needs to happen only at the start but also when we stop and start the camera
-void VideoProvider::createWorkerConnections()
+VideoProvider::~VideoProvider()
 {
-    _workerThread = new VideoWorkerThread{};
+    if (!_workerThread)
+        return;
+
+    _workerThread->quit();
+    _workerThread->wait();
+}
+
+void VideoProvider::initiate()
+{
+    if (_running)
+        return;
+
+    _workerThread = new VideoWorkerThread{this};
     connect(_workerThread, &VideoWorkerThread::resultReady, this, &VideoProvider::handleResults);
     connect(_workerThread, &VideoWorkerThread::finished, _workerThread, &QObject::deleteLater);
     connect(this, &VideoProvider::stopWorker, _workerThread, &VideoWorkerThread::stop);
@@ -25,6 +36,16 @@ void VideoProvider::createWorkerConnections()
     connect(this, &VideoProvider::contrastChanged, _workerThread, &VideoWorkerThread::setContrast);
     connect(this, &VideoProvider::saturationChanged, _workerThread, &VideoWorkerThread::setSaturation);
     connect(this, &VideoProvider::exposureChanged, _workerThread, &VideoWorkerThread::setExposure);
+    _workerThread->start();
+}
+
+void VideoProvider::terminate()
+{
+    if (!_running)
+        return;
+
+    setRunning(false);
+    emit stopWorker();
 }
 
 // helps us to break the image capture loop
@@ -47,36 +68,17 @@ void VideoProvider::handleResults(const QImage& image)
 {
     frameImage = image;
 
-    // only do this when the worker is not activev
+    // only do this when the worker is not active
     if (!_running && _workerThread->running())
         setRunning(true);
-
-//    _app->processEvents(); //verify
-}
-
-void VideoProvider::initiate()
-{
-    if (_running)
-        return;
-
-    createWorkerConnections();
-    _workerThread->start();
-}
-
-void VideoProvider::terminate()
-{
-    setRunning(false);
-    emit stopWorker();
 }
 
 QString VideoProvider::getCameraName() const
 {
     const QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
-    for (const QCameraInfo &cameraInfo : cameras)
-    {
-        if (!cameraInfo.description().isEmpty())
-            return cameraInfo.description();
-    }
+
+    if (!cameras.isEmpty())
+        return cameras.first().description();
 
     return QString{"Default"};
 }
@@ -143,5 +145,3 @@ void VideoProvider::setExposure(const int exposure)
     _exposure = exposure;
     emit saturationChanged(_exposure);
 }
-
-

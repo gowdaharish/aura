@@ -1,6 +1,6 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.12
-import audioProvider 1.0
+//import audioProvider 1.0
 import QtCharts 2.3
 
 Item {
@@ -16,19 +16,21 @@ Item {
     property int sampleRate
     property int frames
 
-    AudioProvider {
-        id: audioProvider
+//    AudioProvider {
+//        id: audioProvider
 
-        //        onCanvasDataChanged: {
-        //            root.canvasDataAquired = true
-        //            console.log("changed---------")
-        //            for (let i = 0; i < 5000; i++)
-        //            {
-        //                let posX = i
-        //                let posY = canvasData[i]/100000000
-        //                chart.add(posX, posY)
-        //            }
-        //        }
+//        onFileInfoUpdated: {
+//            root.format = fileFormat
+//            root.channels = fileChannels
+//            root.sampleRate = fileSampleRate
+//            root.frames = fileFramesNum
+//            providerRunning = true
+//        }
+//    }
+
+    Connections {
+        target: AudioProvider
+
         onFileInfoUpdated: {
             root.format = fileFormat
             root.channels = fileChannels
@@ -36,6 +38,12 @@ Item {
             root.frames = fileFramesNum
             providerRunning = true
         }
+    }
+
+    Component.onDestruction: clearAudioProvider()
+
+    function clearAudioProvider() {
+        AudioProvider.terminate()
     }
 
     Rectangle {
@@ -78,38 +86,6 @@ Item {
                     visible: !root.canvasDataAquired
                 }
             }
-
-            //            ChartView {
-            //                id: chart
-
-            //                title: "Line"
-            //                anchors.fill: parent
-            //                antialiasing: true
-            //                visible: root.canvasDataAquired
-
-            //                ValueAxis {
-            //                    id: axisY
-            //                    gridVisible: true
-            //                    tickCount: 10
-            //                    min: -50
-            //                    max: 50
-            //                }
-
-            //                ValueAxis {
-            //                    id: axisX
-            //                    gridVisible: true
-            //                    tickCount: 10
-            //                    min: -50
-            //                    max: 50
-            //                }
-
-            //                function add(x, y)
-            //                {
-            //                    var line = chart.createSeries(ChartView.SeriesTypeLine, "Line series", axisX, axisY);
-
-            //                    line.append(x,y)
-            //                }
-            //            }
         }
 
         Column {
@@ -125,7 +101,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 font.weight: Font.Medium
                 font.pixelSize: 16
-                text: "Image: " + (root.providerRunning ? audioProvider.filePath() : "None")
+                text: "Image: " + (root.providerRunning ? AudioProvider.filePath() : "None")
             }
 
             Row {
@@ -154,7 +130,7 @@ Item {
                     height: parent.height
                     width: 60
                     name: "Load file"
-                    mouseArea.onClicked: audioProvider.loadAudioFile()
+                    mouseArea.onClicked: AudioProvider.loadAudioFile()
                 }
 
                 Rectangle {
@@ -169,7 +145,7 @@ Item {
                     height: parent.height
                     width: 60
                     name: "Play file"
-                    mouseArea.onClicked: audioProvider.playAudioFile()
+                    mouseArea.onClicked: AudioProvider.playAudioFile()
                 }
 
                 Rectangle {
@@ -184,7 +160,7 @@ Item {
                     height: parent.height
                     width: 60
                     name: "Stop file"
-                    mouseArea.onClicked: audioProvider.stopAudioFile()
+                    mouseArea.onClicked: AudioProvider.stopAudioFile()
                 }
             }
         }

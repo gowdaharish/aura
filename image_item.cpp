@@ -2,35 +2,28 @@
 #include "image_worker_thread.h"
 
 #include <QFileDialog>
+#include <QQuickImageProvider>
 
-ImageItem::ImageItem(QQuickItem *parent) : QQuickPaintedItem(parent)
+ImageItem::ImageItem(QQuickPaintedItem* parent) : QQuickPaintedItem{parent}, _workerThread{this}
 {
-}
-
-void ImageItem::createConnections()
-{
-    _workerThread = new ImageWorkerThread{};
-    connect(_workerThread, &ImageWorkerThread::resultReady, this, &ImageItem::handleResults);
-    connect(_workerThread, &ImageWorkerThread::finished, _workerThread, &QObject::deleteLater);
-    connect(this, &ImageItem::imageChanged, _workerThread, [thread = _workerThread]
-            (const QImage& image) {
-        thread->setOriginalImage(image);
-        thread->setImage(image);
-    });
-    connect(this, &ImageItem::alphaChanged, _workerThread, &ImageWorkerThread::setAlpha);
-    connect(this, &ImageItem::betaChanged, _workerThread, &ImageWorkerThread::setBeta);
-    connect(this, &ImageItem::gammaChanged, _workerThread, &ImageWorkerThread::setGamma);
-    _workerThread->start();
+    connect(&_workerThread, &ImageWorkerThread::resultReady, this, &ImageItem::handleResults);
+    connect(this, &ImageItem::stopWorker, &_workerThread, &ImageWorkerThread::stop);
+    connect(this, &ImageItem::imageChanged, &_workerThread, &ImageWorkerThread::setImage);
+    connect(this, &ImageItem::imageChanged, &_workerThread, &ImageWorkerThread::setOriginalImage);
+    connect(this, &ImageItem::alphaChanged, &_workerThread, &ImageWorkerThread::setAlpha);
+    connect(this, &ImageItem::betaChanged, &_workerThread, &ImageWorkerThread::setBeta);
+    connect(this, &ImageItem::gammaChanged, &_workerThread, &ImageWorkerThread::setGamma);
 }
 
 void ImageItem::readImage()
 {
-    createConnections();
-
     _fileName = QFileDialog::getOpenFileName({}, tr("Open Image"), "/Users/hariahgangaraji/Desktop", tr("Image Files (*.png *.jpg *.bmp)"));
 
     if (_fileName.isEmpty())
+    {
+        setImage(QImage{});
         qDebug() << "failed to load the image" << endl;
+    }
 
     setImage(QImage{_fileName});
 }
@@ -117,4 +110,9 @@ void ImageItem::clearImage()
 {
     setImage(QImage{});
     emit imageCleared();
+}
+
+void ImageItem::terminate()
+{
+    emit stopWorker();
 }

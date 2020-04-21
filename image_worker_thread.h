@@ -13,7 +13,7 @@ using namespace cv;
 
 class ImageProvider;
 
-class ImageWorkerThread : public QThread
+class ImageWorkerThread : public QObject
 {
     Q_OBJECT
 
@@ -26,23 +26,20 @@ public slots:
     void setAlpha(const double alpha);
     void setBeta(const double beta);
     void setGamma(const double gamma);
+    void stop();
 
 signals:
     void resultReady(const QImage& image);
 
-protected:
-    void run() override;
-
 private:
-    void basicLinearTransform(const Mat& img, const double alpha_, const int beta_);
-    void gammaCorrection(const Mat& img, const double gamma_);
+    void basicLinearTransform(const Mat& img, const double alpha_, const int beta);
+    void gammaCorrection(const Mat& img, const double gamma);
     void ABTransform(const double alpha, const double beta);
 
-    Mat _mat, _matCorrected;
-    ImageWorkerThread* _workerThread;
+    Mat _matCorrected;
     QImage _image, _originalImage;
     QPixmap _pixmap;
-    bool _running = false;
+    bool _stop = false;
     QString _path;
     int _alpha = 1;
     double _beta = 1;

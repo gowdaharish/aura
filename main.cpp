@@ -18,12 +18,18 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
-    VideoProvider* videoProvider = new VideoProvider{&app};
+
+    //video provide
+    auto videoProvider = new VideoProvider{&app};
     engine.addImageProvider(QLatin1String("VideoProvider"), videoProvider);
     engine.rootContext()->setContextProperty("VideoProvider", videoProvider);
 
+    //audio provider
+    auto audioProvider = new AudioProvider{&app};
+    engine.rootContext()->setContextProperty("AudioProvider", audioProvider);
+
+    //image provider
     qmlRegisterType<ImageItem>("imageProvider", 1, 0, "ImageItem");
-    qmlRegisterType<AudioProvider>("audioProvider", 1, 0, "AudioProvider");
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,

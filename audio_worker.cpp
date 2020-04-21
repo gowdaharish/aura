@@ -1,5 +1,4 @@
 #include "audio_worker.h"
-#include "sndfile.h"
 #include "fftw3.h"
 #include "math.h"
 
@@ -7,18 +6,8 @@
 
 using namespace std::chrono_literals;
 
-/* Data structure to pass to callback
-includes the sound file, info about the sound file, and a position
-cursor (where we are in the sound file) */
-struct OurData
-{
-    SNDFILE* sndFile;
-    SF_INFO sfInfo;
-    int position;
-};
-
 // callback function for audio output
-int Callback(const void*,
+int callback(const void*,
              void* output,
              unsigned long frameCount,
              const PaStreamCallbackTimeInfo*,
@@ -34,6 +23,7 @@ int Callback(const void*,
     cursor = out; // set the output cursor to the beginning
     while (thisSize > 0)
     {
+        qDebug() << thisSize << endl;
         // seek to our current file position
         sf_seek(data->sndFile, data->position, SEEK_SET);
 
@@ -69,72 +59,73 @@ int Callback(const void*,
     return paContinue;
 }
 
-AudioWorker::AudioWorker(QThread* parent) : QThread{parent}
+AudioWorker::AudioWorker(QObject* parent) : QThread{parent}
 {
-    qDebug() << "initializing the worker object" << endl;
 }
 
 AudioWorker::~AudioWorker()
 {
-//    this->finished({});
-    Pa_Terminate(); // and shut down portaudio
+    quit();
+    wait();
 }
 
 void AudioWorker::run()
 {
-    while(true)
+    while(!_stop)
     {
         if (_playing)
             playAudio();
-
-        std::this_thread::sleep_for(100ms);
     }
 }
 
 void AudioWorker::loadFile(const QString& filePath)
 {
-    // make sure to terminate previous active treams
-    Pa_Terminate();
-
-    OurData* data = (OurData *)malloc(sizeof(OurData));
-    PaStreamParameters outputParameters;
+    _data = (OurData *)malloc(sizeof(OurData));
 
     //initialize our data
-    data->position = 0;
-    data->sfInfo.format = 0;
+    _data->position = 0;
+    _data->sfInfo.format = 0;
     // try to open the file
-    data->sndFile = sf_open(filePath.toStdString().c_str(), SFM_READ, &data->sfInfo);
+    _data->sndFile = sf_open(filePath.toStdString().c_str(), SFM_READ, &_data->sfInfo);
 
-    const auto numFrames = data->sfInfo.frames;
-    int pictureArray[numFrames];
-    memset(pictureArray, 0, numFrames);
-    sf_readf_int(data->sndFile,  pictureArray, numFrames);
-    qDebug() << sizeof(pictureArray) << endl;
-    if (sizeof(pictureArray) > 0)
-        emit writeToCanvas(pictureArray);
+    const auto numFrames = _data->sfInfo.frames;
+    int soundArray[numFrames];
+    memset(soundArray, 0, numFrames);
+    sf_readf_int(_data->sndFile,  soundArray, numFrames);
+
+    if (sizeof(soundArray) > 0)
+        emit writeToCanvas(soundArray);
+
+        emit fileLoaded(_data->sfInfo.format, _data->sfInfo.channels, _data->sfInfo.samplerate, _data->sfInfo.frames);
+  }
+
+void AudioWorker::initializePortAudio()
+{
+    // make sure to terminate previous active treams
+    Pa_Terminate();
 
     // start portaudio
     Pa_Initialize();
 
     // set the output parameters
-    outputParameters.device = Pa_GetDefaultOutputDevice();
-    outputParameters.channelCount = data->sfInfo.channels;
-    outputParameters.sampleFormat = paInt32;
+    _outputParameters.device = Pa_GetDefaultOutputDevice();
+    _outputParameters.channelCount = _data->sfInfo.channels;
+    _outputParameters.sampleFormat = paInt32;
     // 200 ms ought to satisfy even the worst sound card
-    outputParameters.suggestedLatency = 0.2;
-    outputParameters.hostApiSpecificStreamInfo = 0;
+    _outputParameters.suggestedLatency = 0.2;
+    _outputParameters.hostApiSpecificStreamInfo = 0;
 
 
 
     // try to open the output
     error = Pa_OpenStream(&stream,
                           0, // no input
-                          &outputParameters,
-                          data->sfInfo.samplerate,
+                          &_outputParameters,
+                          _data->sfInfo.samplerate,
                           paFramesPerBufferUnspecified, // let portaudio choose the buffersize
                           paNoFlag, // no special modes (clip off, dither off)
-                          Callback, // callback function defined above
-                          data ); /* pass in our data structure so the
+                          callback, // callback function defined above
+                          _data ); /* pass in our data structure so the
     callback knows what's up */
 
     // if we can't open it, then bail out
@@ -144,19 +135,22 @@ void AudioWorker::loadFile(const QString& filePath)
         Pa_Terminate();
         return;
     }
+}
 
-    emit fileLoaded(outputParameters.sampleFormat, outputParameters.channelCount, data->sfInfo.samplerate, data->sfInfo.frames);
-
-    return;
+void AudioWorker::terminatePortAudio()
+{
+//    if (auto result = sf_close(_data->sndFile); result != 0)
+//        qDebug() << "couldn't close the SNDFILE, an error occured";
+    Pa_Terminate();
 }
 
 int AudioWorker::playAudio()
 {
     qDebug() << "play called" << endl;
-
+    initializePortAudio();
     // when we start the stream, the callback starts getting called
     Pa_StartStream(stream);
-    Pa_Sleep(30000); /* pause for 2 seconds (2000ms) so we can hear a bit of the output */
+    Pa_Sleep(2000); /* pause for 2 seconds (2000ms) so we can hear a bit of the output */
     Pa_StopStream(stream); // stop the stream
 
     return 0;
@@ -164,13 +158,18 @@ int AudioWorker::playAudio()
 
 void AudioWorker::stopAudio()
 {
-    setPlaying(false);
     qDebug() << "stopping audio plyaback: " << _playing << endl;
-    Pa_StopStream(stream); // stop the stream
+    Pa_StopStream(stream);
 }
 
 void AudioWorker::setPlaying(const bool playing)
 {
     qDebug() << "playing is being set:" << playing << endl;
     _playing = playing;
+}
+
+void AudioWorker::setStop(const bool stop)
+{
+    qDebug() << "stop playing" << endl;
+    _stop = stop;
 }

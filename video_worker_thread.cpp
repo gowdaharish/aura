@@ -5,7 +5,7 @@
 #include <QThread>
 #include <QCameraInfo>
 
-VideoWorkerThread::VideoWorkerThread(QObject * /*parent*/)
+VideoWorkerThread::VideoWorkerThread(QObject* parent) : QThread{parent}
 {}
 
 void VideoWorkerThread::run()
@@ -72,12 +72,6 @@ void VideoWorkerThread::run()
     qDebug() << "finished" << endl;
 }
 
-void VideoWorkerThread::stop()
-{
-    qDebug() << "stop grabbing" << endl;
-    _stop = true;
-}
-
 void VideoWorkerThread::setFormat(const QImage::Format format)
 {
     if (format == _format)
@@ -131,4 +125,10 @@ void VideoWorkerThread::setExposure(const int exposure)
         return;
 
     _exposure = exposure;
+}
+
+void VideoWorkerThread::stop()
+{
+    qDebug() << "stop grabbing" << endl;
+    _stop = true;
 }

@@ -1,10 +1,10 @@
 #pragma once
 
+#include "video_worker_thread.h"
+
 #include <QQuickImageProvider>
 #include <QPixmap>
 #include <QCoreApplication>
-
-class VideoWorkerThread;
 
 class VideoProvider : public QObject, public QQuickImageProvider
 {
@@ -20,7 +20,8 @@ class VideoProvider : public QObject, public QQuickImageProvider
     Q_PROPERTY(int exposure READ exposure WRITE setExposure NOTIFY exposureChanged)
 
 public:
-    VideoProvider(QCoreApplication* app, QObject* parent = nullptr);
+    VideoProvider(QObject* parent = nullptr);
+    ~VideoProvider();
 
     QPixmap requestPixmap(const QString &id, QSize *size, const QSize &requestedSize) override;
     bool running() const {return _running;}
@@ -59,10 +60,7 @@ signals:
     void stopWorker();
 
 private:
-    void createWorkerConnections();
-
-    QCoreApplication* _app; // added to call processEvents(), should replace frame number count
-    VideoWorkerThread* _workerThread;
+    VideoWorkerThread* _workerThread = nullptr;
     QImage frameImage{};
     QPixmap pixmap{};
     bool _running = false;

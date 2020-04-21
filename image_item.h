@@ -1,11 +1,13 @@
 #pragma once
 
+#include "image_worker_thread.h"
+
 #include <QQuickPaintedItem>
 #include <QQuickItem>
 #include <QPainter>
 #include <QImage>
 
-class ImageWorkerThread;
+//class ImageWorkerThread;
 
 class ImageItem : public QQuickPaintedItem
 {
@@ -17,7 +19,7 @@ Q_OBJECT
     Q_PROPERTY(bool processingEnabled READ processingEnabled WRITE setProcessingEnabled NOTIFY processingEnabledChanged)
 
 public:
-    ImageItem(QQuickItem *parent = nullptr);
+    ImageItem(QQuickPaintedItem* parent = nullptr);
     void paint(QPainter *painter);
     QImage image() const;
     void setImage(const QImage& image);
@@ -34,6 +36,7 @@ public:
 public slots:
     void readImage();
     void clearImage();
+    void terminate();
 
 private slots:
     void handleResults(const QImage& image);
@@ -45,11 +48,10 @@ signals:
     void gammaChanged(const double gamma);
     void processingEnabledChanged(const bool processingEnabled);
     void imageCleared();
+    void stopWorker();
 
 private:
-    void createConnections();
-
-    ImageWorkerThread* _workerThread;
+    ImageWorkerThread _workerThread;
     QString _fileName;
     QImage _currentImage;
     bool _processingEnabled;
