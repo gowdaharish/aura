@@ -21,7 +21,6 @@ class VideoProvider : public QObject, public QQuickImageProvider
 
 public:
     VideoProvider(QObject* parent = nullptr);
-    ~VideoProvider();
 
     QPixmap requestPixmap(const QString &id, QSize *size, const QSize &requestedSize) override;
     bool running() const {return _running;}

@@ -19,7 +19,6 @@ class VideoWorkerThread : public QThread
 
 public:
     VideoWorkerThread(QObject* parent = nullptr);
-    ~VideoWorkerThread();
     bool running() const {return  !_stop;}
 
 public slots:
