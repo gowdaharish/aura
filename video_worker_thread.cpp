@@ -8,6 +8,10 @@
 VideoWorkerThread::VideoWorkerThread(QObject* parent) : QThread{parent}
 {}
 
+VideoWorkerThread::~VideoWorkerThread()
+{
+}
+
 void VideoWorkerThread::run()
 {
     qDebug() << "iniitiating capture" << endl;

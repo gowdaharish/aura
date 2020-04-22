@@ -7,14 +7,24 @@
 
 AudioProvider::AudioProvider(QObject* parent) : QObject{parent}
 {
+    _worker.moveToThread(&_workerThread);
+
+    connect(&_workerThread, &QThread::finished, &_worker, &AudioWorker::deleteLater);
+    connect(&_worker, &AudioWorker::fileLoaded, this, &AudioProvider::storeFileData);
+    connect(&_worker, &AudioWorker::writeToCanvas, this, &AudioProvider::handleCanvasData);
+    connect(this, &AudioProvider::fileNameChanged, &_worker, &AudioWorker::loadFile);
+    connect(this, &AudioProvider::play, &_worker, &AudioWorker::playAudio);
+    connect(this, &AudioProvider::stop, &_worker, &AudioWorker::stopAudio, Qt::DirectConnection);
+
+    _workerThread.start();
 }
 
 AudioProvider::~AudioProvider()
 {
-    if (!_worker)
-        return;
-
-    _worker->stopAudio();
+    _worker.stopAudio();
+    disconnect(this, 0, &_worker, 0);
+    _workerThread.quit();
+    _workerThread.wait();
 }
 
 void AudioProvider::getSupportedCodes()
@@ -32,36 +42,19 @@ void AudioProvider::loadAudioFile()
         return;
     }
 
-    if (_worker)
-    {
-        _worker->setStop(true);
-        _worker = nullptr;
-    }
-
-    _worker = new AudioWorker{this};
-    connect(_worker, &AudioWorker::finished, _worker, &AudioWorker::deleteLater);
-    connect(_worker, &AudioWorker::fileLoaded, this, &AudioProvider::storeFileData);
-    connect(_worker, &AudioWorker::writeToCanvas, this, &AudioProvider::handleCanvasData);
-    connect(this, &AudioProvider::fileNameChanged, _worker, &AudioWorker::loadFile);
-    connect(this, &AudioProvider::setPlaying, _worker, &AudioWorker::setPlaying);
-
     emit fileNameChanged(_fileName);
 }
 
 void AudioProvider::playAudioFile()
 {
     qDebug() << "playing audio" << endl;
-    emit setPlaying(true);
-    _worker->setStop(false);
-    _worker->start();
+    emit play();
 }
 
 void AudioProvider::stopAudioFile()
 {
     qDebug() << "stopping audio" << endl;
-    _worker->setStop(true);
-    _worker->stopAudio();
-    _worker->terminatePortAudio();
+    emit stop();
 }
 
 void AudioProvider::handleCanvasData(const int data[])
@@ -80,10 +73,4 @@ void AudioProvider::storeFileData(double format, double channels, double sampleR
     _frames = frames;
 
     emit fileInfoUpdated(_format, _channels, _sampleRate, _frames);
-}
-
-void AudioProvider::terminate()
-{
-    emit setPlaying(false);
-    _worker->setStop(true);
 }

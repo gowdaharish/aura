@@ -1,5 +1,5 @@
 #include "audio_worker.h"
-#include "fftw3.h"
+//#include "fftw3.h"
 #include "math.h"
 
 #include <QDebug>
@@ -59,23 +59,12 @@ int callback(const void*,
     return paContinue;
 }
 
-AudioWorker::AudioWorker(QObject* parent) : QThread{parent}
+AudioWorker::AudioWorker(QObject* parent) : QObject{parent}
 {
 }
 
 AudioWorker::~AudioWorker()
 {
-    quit();
-    wait();
-}
-
-void AudioWorker::run()
-{
-    while(!_stop)
-    {
-        if (_playing)
-            playAudio();
-    }
 }
 
 void AudioWorker::loadFile(const QString& filePath)
@@ -88,16 +77,17 @@ void AudioWorker::loadFile(const QString& filePath)
     // try to open the file
     _data->sndFile = sf_open(filePath.toStdString().c_str(), SFM_READ, &_data->sfInfo);
 
-    const auto numFrames = _data->sfInfo.frames;
-    int soundArray[numFrames];
-    memset(soundArray, 0, numFrames);
-    sf_readf_int(_data->sndFile,  soundArray, numFrames);
+    // store the data for plotting
+    //    const auto numFrames = _data->sfInfo.frames;
+    //    int soundArray[numFrames];
+    //    memset(soundArray, 0, numFrames);
+    //    sf_readf_int(_data->sndFile,  soundArray, numFrames);
 
-    if (sizeof(soundArray) > 0)
-        emit writeToCanvas(soundArray);
+    //    if (sizeof(soundArray) > 0)
+    //        emit writeToCanvas(soundArray);
 
-        emit fileLoaded(_data->sfInfo.format, _data->sfInfo.channels, _data->sfInfo.samplerate, _data->sfInfo.frames);
-  }
+    emit fileLoaded(_data->sfInfo.format, _data->sfInfo.channels, _data->sfInfo.samplerate, _data->sfInfo.frames);
+}
 
 void AudioWorker::initializePortAudio()
 {
@@ -139,8 +129,7 @@ void AudioWorker::initializePortAudio()
 
 void AudioWorker::terminatePortAudio()
 {
-//    if (auto result = sf_close(_data->sndFile); result != 0)
-//        qDebug() << "couldn't close the SNDFILE, an error occured";
+    Pa_StopStream(stream);
     Pa_Terminate();
 }
 
@@ -150,7 +139,7 @@ int AudioWorker::playAudio()
     initializePortAudio();
     // when we start the stream, the callback starts getting called
     Pa_StartStream(stream);
-    Pa_Sleep(2000); /* pause for 2 seconds (2000ms) so we can hear a bit of the output */
+    Pa_Sleep(5000); /* pause for 2 seconds (2000ms) so we can hear a bit of the output */
     Pa_StopStream(stream); // stop the stream
 
     return 0;
@@ -158,18 +147,6 @@ int AudioWorker::playAudio()
 
 void AudioWorker::stopAudio()
 {
-    qDebug() << "stopping audio plyaback: " << _playing << endl;
-    Pa_StopStream(stream);
-}
-
-void AudioWorker::setPlaying(const bool playing)
-{
-    qDebug() << "playing is being set:" << playing << endl;
-    _playing = playing;
-}
-
-void AudioWorker::setStop(const bool stop)
-{
-    qDebug() << "stop playing" << endl;
-    _stop = stop;
+    qDebug() << "stopping audio plyaback: " << endl;
+    terminatePortAudio();
 }
