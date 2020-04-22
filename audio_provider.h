@@ -26,18 +26,18 @@ public slots:
     void stopAudioFile();
     void handleCanvasData(const int data[]);
     void storeFileData(double format, double channels, double sampleRate, double frames);
-    void terminate();
 
 signals:
     void fileNameChanged(const QString& filePath);
     void canvasDataChanged(const QVector<int> canvasData);
     void fileInfoUpdated(const int fileFormat, const int fileChannels, const int fileSampleRate, const int fileFramesNum);
-    void stopWorker();
-    void setPlaying(const bool playing);
+    void play();
+    void stop();
 
 private:
     QString _fileName;
-    AudioWorker* _worker = nullptr;
+    AudioWorker _worker;
+    QThread _workerThread;
     QVector<int> _canvasData;
     int _format, _channels, _sampleRate, _frames;
 };

@@ -9,22 +9,6 @@
 
 VideoProvider::VideoProvider(QObject* parent) : QObject{parent}, QQuickImageProvider(QQuickImageProvider::Pixmap)
 {
-}
-
-VideoProvider::~VideoProvider()
-{
-    if (!_workerThread)
-        return;
-
-    _workerThread->quit();
-    _workerThread->wait();
-}
-
-void VideoProvider::initiate()
-{
-    if (_running)
-        return;
-
     _workerThread = new VideoWorkerThread{this};
     connect(_workerThread, &VideoWorkerThread::resultReady, this, &VideoProvider::handleResults);
     connect(_workerThread, &VideoWorkerThread::finished, _workerThread, &QObject::deleteLater);
@@ -36,6 +20,13 @@ void VideoProvider::initiate()
     connect(this, &VideoProvider::contrastChanged, _workerThread, &VideoWorkerThread::setContrast);
     connect(this, &VideoProvider::saturationChanged, _workerThread, &VideoWorkerThread::setSaturation);
     connect(this, &VideoProvider::exposureChanged, _workerThread, &VideoWorkerThread::setExposure);
+}
+
+void VideoProvider::initiate()
+{
+    if (_running)
+        return;
+
     _workerThread->start();
 }
 
@@ -46,6 +37,9 @@ void VideoProvider::terminate()
 
     setRunning(false);
     emit stopWorker();
+
+    _workerThread->quit();
+    _workerThread->wait();
 }
 
 // helps us to break the image capture loop

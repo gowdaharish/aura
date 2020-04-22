@@ -16,7 +16,7 @@ struct OurData
     int position;
 };
 
-class AudioWorker : public QThread
+class AudioWorker : public QObject
 {
     Q_OBJECT
 
@@ -28,8 +28,6 @@ public:
 
 public slots:
     void loadFile(const QString& file);
-    void setPlaying(const bool playing);
-    void setStop(const bool stop);
     void terminatePortAudio();
     void initializePortAudio();
 
@@ -38,15 +36,9 @@ signals:
     void writeToCanvas(const int[]);
     void fileLoaded(double format, double channels, double sampleRate, double frames);
 
-protected:
-    void run() override;
-
 private:
     OurData* _data = nullptr;
     PaStreamParameters _outputParameters;
     PaStream* stream = nullptr;
     PaError error;
-    bool _playing = false;
-    bool _stop;
-
 };

@@ -16,18 +16,6 @@ Item {
     property int sampleRate
     property int frames
 
-//    AudioProvider {
-//        id: audioProvider
-
-//        onFileInfoUpdated: {
-//            root.format = fileFormat
-//            root.channels = fileChannels
-//            root.sampleRate = fileSampleRate
-//            root.frames = fileFramesNum
-//            providerRunning = true
-//        }
-//    }
-
     Connections {
         target: AudioProvider
 
@@ -43,7 +31,8 @@ Item {
     Component.onDestruction: clearAudioProvider()
 
     function clearAudioProvider() {
-        AudioProvider.terminate()
+        AudioProvider.stopAudioFile()
+        //more things to follow
     }
 
     Rectangle {
