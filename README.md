@@ -9,3 +9,8 @@ Each of them will have set of features which can be adjusted in realtime to see 
 This project is considered for the Camera calibration and Object detection projects.
 
 This is heavily under process still. Various functionalities are yet to be finalized.
+
+![main](screenshots/main-page.png)
+![video](screenshots/video-page.png)
+![image](screenshots/image-page.png)
+![audio](screenshots/audio-page.png)
